@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="shortcut icon" href="#" />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-KK94CHFLLe+nY2dmCWGMq91rCGa5gtU4mk92HdvYe+M/SXH301p5ILy+dN9+nJOZ"
+      crossorigin="anonymous"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <title>Document</title>
+    <style>
+      .form-row {
+        align-items: center;
+      }
+      .premium-button {
+        position: fixed;
+        top: 10px;
+        left: 10px;
+        z-index: 999;
+        --bs-btn-color: #000;
+        --bs-btn-bg: #ffc107;
+        --bs-btn-border-color: hsla(0, 0%, 100%, 0.1);
+      }
+      * {
+        margin: 0;
+        padding: 5px;
+        font-family: "Eczar", serif;
+      }
+
+      body {
+        background: linear-gradient(45deg, #1e7295, #aca032);
+      }
+
+      #baxo {
+        display: flex;
+      }
+
+      .text-center {
+        padding-top: 20px;
+      }
+
+      .container-fluid {
+        height: 600px;
+      }
+
+      #main-header {
+        background-color: #007bff;
+        color: white;
+        padding: 1rem;
+        margin-bottom: 1rem;
+      }
+
+      #header-title {
+        font-family: "Eczar", serif;
+        text-align: center;
+      }
+
+      form {
+        margin-bottom: 2rem;
+      }
+
+      input[type="text"]:focus {
+        box-shadow: 0 0 5px 2px #1ebe78;
+        /* border: 3px  #b32952; */
+      }
+
+      input[type="number"]:focus {
+        box-shadow: 0 0 5px 2px #1ebe78;
+        /* border: 3px  #b32952; */
+      }
+
+      .btn {
+        --bs-btn-padding-x: 1.75rem;
+        --bs-btn-padding-y: 0.375rem;
+      }
+
+      .btn-danger {
+        margin-right: 19px;
+      }
+
+      .list-group-item {
+        background-color: #6dbd9f4d;
+      }
+
+      .btn-primary {
+        --bs-btn-color: #000;
+        --bs-btn-bg: #ffc107;
+        --bs-btn-border-color: hsla(0, 0%, 100%, 0.1);
+      }
+    </style>
+  </head>
+  <body>
+    <div id="premiumdiv"></div>
+    <header id="main-header" class="bg-success text-white p-4 mb-3">
+      <div class="container">
+        <h1 class="text-center" id="header-title">Expenses Tracker</h1>
+      </div>
+    </header>
+    <form>
+      <div class="form-row" id="baxo">
+        <div class="col">
+          <input
+            type="number"
+            id="amount"
+            class="form-control"
+            placeholder="Amount"
+          />
+        </div>
+        <div class="col">
+          <input
+            type="text"
+            id="item"
+            class="form-control"
+            placeholder="Add Item"
+          />
+        </div>
+        <div class="col">
+          <div class="form-group">
+            <select class="form-control rounded" id="table" name="table">
+              <option value="food">Food</option>
+              <option value="health">Health</option>
+              <option value="bills">Bills</option>
+              <option value="pet">Pet</option>
+              <option value="drinks">Drinks</option>
+              <option value="electricity">Electricity</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="text-center">
+        <button type="button" id="btn" class="btn btn-primary">
+          Add Expense</button
+        ><br /><br />
+        <span id="totalAmount"></span>
+      </div>
+    </form>
+    <div class="container-fluid">
+      <h3 style="text-align: center;">List Of Expenses</h3>
+      <ul class="list-group"></ul>
+    </div>
+    <nav>
+      <ul id="pagination" class="pagination"></ul>
+    </nav>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <script>
+      console.log(" Hello  I am Expenses Manager ");
+      const API_URL = `http://localhost:3000/api/main`;
+      // TO add the expenses
+      async function addExpenses() {
+        const userData = {};
+        userData.amount = document.getElementById("amount").value;
+        userData.item = document.getElementById("item").value;
+        userData.category = document.getElementById("table").value;
+        // TAking token from localstorage
+        const token = localStorage.getItem("token");
+
+        const response = await fetch(`${API_URL}/savedata`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            // Send token in header
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(userData),
+        });
+
+        let data = await response.json();
+        console.log(data);
+        showAllExpensesOnScreen();
+        showTotalExpenses();
+        amount.value = "";
+        item.value = "";
+      }
+
+      // TO Display expenses using pagination
+      let currentPage = 1;
+      async function showAllExpensesOnScreen(page) {
+        const token = localStorage.getItem("token");
+        const response = await fetch(
+          `http://localhost:3000/api/main/pagination?page=${page}`,
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        // Check the response status code
+        if (response.status === 401) {
+          const loginPageLink =
+            "http://localhost:3000/login/login.html";
+          const confirmMessage = `Please click OK to go to the login page.`;
+          if (window.confirm(confirmMessage)) {
+            window.location.href = loginPageLink;
+          }
+          return;
+        }
+        const { result } = await response.json();
+        const itemList = document.getElementsByClassName("list-group")[0];
+        // Clear the existing content
+        itemList.innerHTML = "";
+        result.rows.forEach((item) => {
+          const listItem = document.createElement("li");
+          listItem.className = "list-group-item";
+          listItem.style.backgroundColor = "#6dbd9f4d";
+          listItem.style.color = "#000000";
+          listItem.textContent = `Item Name: ${item.item}, Item Price: ${item.amount}, Category: ${item.category}`;
+          const editButton = document.createElement("button");
+          editButton.className = "btn btn-info";
+          editButton.style.float = "right";
+          editButton.textContent = "Edit";
+          editButton.addEventListener("click", () =>
+            editItemDetails(item.id, item.item, item.amount, item.category)
+          );
+          const deleteButton = document.createElement("button");
+          deleteButton.className = "btn btn-danger";
+          deleteButton.style.float = "right";
+          deleteButton.textContent = "Delete";
+          deleteButton.addEventListener("click", () => deleteItem(item.id));
+          listItem.appendChild(editButton);
+          listItem.appendChild(deleteButton);
+          itemList.appendChild(listItem);
+        });
+        displayPaginationButtons(result.count);
+      }
+      function displayPaginationButtons(totalCount) {
+        const paginationDiv = document.getElementById("pagination");
+        paginationDiv.innerHTML = "";
+        const totalPages = Math.ceil(totalCount / 5);
+        if (currentPage > 1) {
+          const prevButton = createPaginationButton("Prev", currentPage - 1);
+          paginationDiv.appendChild(prevButton);
+        }
+        for (let i = 1; i <= totalPages; i++) {
+          const pageButton = createPaginationButton(i, i);
+          paginationDiv.appendChild(pageButton);
+        }
+        if (currentPage < totalPages) {
+          const nextButton = createPaginationButton("Next", currentPage + 1);
+          paginationDiv.appendChild(nextButton);
+        }
+      }
+      function createPaginationButton(text, page) {
+        const button = document.createElement("li");
+        button.classList.add("page-item");
+
+        const link = document.createElement("a");
+        link.classList.add("page-link");
+        link.href = "#";
+        link.textContent = text;
+        link.addEventListener("click", () => {
+          currentPage = page;
+          showAllExpensesOnScreen(currentPage);
+        });
+
+        button.appendChild(link);
+        return button;
+      }
+
+      // Call the function initially to display the first page of expenses
+      showAllExpensesOnScreen(currentPage);
+
+      //  TO update existing expences
+      async function editItemDetails(id, itemvalue, itemprice, itemcategory) {
+        const item = prompt(" Change The Item name ", itemvalue);
+        const amount = prompt(" Change The Item Price ", itemprice);
+        const category = prompt(" Change The Item Category ", itemcategory);
+        const updatedDetails = {
+          id,
+          item,
+          amount,
+          category,
+        };
+        await fetch(`${API_URL}/update-expenses`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(updatedDetails),
+        });
+        showAllExpensesOnScreen();
+        showTotalExpenses();
+      }
+
+      // Delete function
+      async function deleteItem(id) {
+        const confirmMessage = `Really want to delete.`;
+        if (window.confirm(confirmMessage)) {
+          const response = await fetch(`${API_URL}/delete-expenses`, {
+            method: "DELETE",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ id: id }),
+          });
+          console.log(" Expenses deleted", response);
+          showAllExpensesOnScreen();
+          showTotalExpenses();
+        } else {
+          return;
+        }
+      }
+
+      // Show total expenses
+      async function showTotalExpenses() {
+        const token = localStorage.getItem("token");
+        const response = await fetch(
+          `http://localhost:3000/api/main/total-expenses`,
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        const { result } = await response.json();
+        let sum = 0;
+        result.forEach((result) => {
+          sum += parseInt(result.amount);
+        });
+        document.getElementById(
+          "totalAmount"
+        ).textContent = `Total Expenses : ${sum}`;
+        console.log("Total expenses:", sum);
+      }
+      //
+      const premiumFeature = async () => {
+        const headerName = document.getElementById("header-title");
+        let premiumDiv = document.getElementById("premiumdiv");
+        const token = localStorage.getItem("token");
+        const response = await fetch(`${API_URL}/single-user`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        const data = await response.json();
+        headerName.innerText = `${data.name}'s Expenses Tracker`;
+        if (data.isPremium === true) {
+          let premiumUser = document.createElement("button");
+          premiumUser.className = "btn btn-primary premium-button";
+          premiumUser.id = "premium-user";
+          premiumUser.textContent = "Premium User";
+          premiumUser.onclick = premiumUserButton;
+          premiumDiv.appendChild(premiumUser);
+        } else {
+          let buypremium = document.createElement("button");
+          buypremium.className = "btn btn-primary premium-button";
+          buypremium.id = "premium-button";
+          buypremium.textContent = " Buy Premium ";
+          buypremium.onclick = buyPremium;
+          premiumDiv.appendChild(buypremium);
+        }
+      };
+      // To buy a premium membership
+      const buyPremium = async () => {
+        try {
+          const token = localStorage.getItem("token");
+          const data = await fetch("http://localhost:3000/api/razorpay/key");
+          const { key } = await data.json();
+          const response = await fetch(
+            "http://localhost:3000/api/razorpay/checkout",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+
+          const { details } = await response.json();
+
+          console.log("Order details : ", details);
+
+          const options = {
+            key: key,
+            currency: "INR",
+            description: "Test Transaction",
+            image:
+              "https://clipartix.com/wp-content/uploads/2016/09/Cartoons-clipart-image-1.jpg",
+            order_id: details.id,
+            callback_url: `http://localhost:3000/api/razorpay/verify?token=${token}`,
+            prefill: {
+              name: "Gaurav Kumar",
+              email: "gaurav.kumar@example.com",
+              contact: "9000090000",
+            },
+            notes: {
+              address: "Razorpay Corporate Office",
+            },
+            theme: {
+              color: "#3399cc",
+            },
+          };
+          var rzp1 = new window.Razorpay(options);
+          rzp1.open();
+        } catch (err) {
+          console.log(err);
+        }
+      };
+      let premiumUserButton = async () => {
+        const token = localStorage.getItem("token");
+        const response = await fetch(`${API_URL}/is-premium`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        const leadboardLink =
+          "http://localhost:3000/leadboard/leadbord.html";
+        const { result } = await response.json();
+        if (result.isPremium === true) {
+          window.location.href = leadboardLink;
+        } else {
+          alert("You are not a premium user");
+        }
+      };
+
+      const botam = document.getElementById("btn");
+      botam.addEventListener("click", (e) => {
+        e.preventDefault();
+        addExpenses();
+      });
+      // showAllExpensesOnScreen();
+      showTotalExpenses();
+      premiumFeature();
+    </script>
+  </body>
+</html>
